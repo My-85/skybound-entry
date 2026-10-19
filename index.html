@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>SKYBOUND · 通用机动飞行实验室</title>
+  <meta name="description" content="SKYBOUND 通用机动飞行实验室访问入口。">
+  <style>html{color-scheme:dark}body{margin:0;min-height:100svh;display:grid;place-items:center;background:#081217;color:#e4efec;font:16px/1.8 system-ui,sans-serif}main{max-width:560px;padding:40px}h1{font-size:30px;line-height:1.4}a{color:#8ee4c3}p{color:#a9bdb9}small{color:#819893}</style>
+</head>
+<body>
+  <main>
+    <h1>SKYBOUND<br>通用机动飞行实验室</h1>
+    <p>正在打开实验室。若未自动跳转，请点击下方链接。</p>
+    <a id="open" href="https://a4-skybound-dual-lab.dqy479728512.chatgpt.site/lab/?scene=valley-inspection">进入飞行实验室</a>
+    <p><small>实验室沿用原站的访问权限，可能需要登录。</small></p>
+  </main>
+  <script>
+    const destination = new URL('https://a4-skybound-dual-lab.dqy479728512.chatgpt.site/lab/');
+    destination.searchParams.set('scene', new URLSearchParams(location.search).get('scene') || 'valley-inspection');
+    document.getElementById('open').href = destination.href;
+    location.replace(destination.href);
+  </script>
+</body>
+</html>
