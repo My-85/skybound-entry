@@ -1,0 +1,35 @@
+import * as T from 'three';
+import {world} from './world.js';
+import {isAirObstacle} from './core.js';
+export function obstacleMesh(o){const group=new T.Group(),mat=new T.MeshStandardMaterial({color:o.kind==='rock'?0x8f8e7d:o.kind==='airship'?0xc1c9b7:0x879997,roughness:.8,metalness:.12}),accent=new T.MeshStandardMaterial({color:0xe6a47f,roughness:.6});
+ const box=(w,h,d,x=0,y=0,z=0,m=mat)=>{const mesh=new T.Mesh(new T.BoxGeometry(w,h,d),m);mesh.position.set(x,y,z);group.add(mesh);return mesh;};const [n,e,h]=o.size;
+ if(o.kind==='rock'){
+  const vertices=[],colors=[],sides=9,rings=5,levels=[];
+  for(let j=0;j<rings;j++){const f=j/(rings-1),radius=[1,.91,.78,.67,.43][j];levels.push(Array.from({length:sides},(_,i)=>{const a=i*Math.PI*2/sides,noise=.88+.12*Math.sin(i*17.31+j*3.9);return [Math.cos(a)*e*.5*radius*noise+(j?Math.sin(j)*e*.07:0),-h/2+f*h,Math.sin(a)*n*.5*radius*noise];}));}
+  function tri(a,b,c,k){for(const v of [a,b,c]){vertices.push(...v);const col=new T.Color('#817e6e').lerp(new T.Color('#c1b9a0'),(.5+.5*Math.sin(k*6.5))*.6);colors.push(col.r,col.g,col.b);}}
+  let k=0;for(let j=0;j<rings-1;j++)for(let i=0;i<sides;i++){const next=(i+1)%sides;tri(levels[j][i],levels[j+1][i],levels[j][next],k++);tri(levels[j][next],levels[j+1][i],levels[j+1][next],k++);}
+  for(let i=0;i<sides;i++)tri([0,h/2,0],levels.at(-1)[(i+1)%sides],levels.at(-1)[i],k++);
+  const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(vertices,3));g.setAttribute('color',new T.Float32BufferAttribute(colors,3));g.computeVertexNormals();group.add(new T.Mesh(g,new T.MeshStandardMaterial({vertexColors:true,roughness:1,flatShading:true,side:T.DoubleSide})));
+ }
+ else if(o.kind==='building'){box(e,h,n);box(e*1.01,h*.025,n*1.01,0,h*.35,0,accent);for(let y=-.3;y<=.25;y+=.15){box(e*1.01,h*.018,n*1.01,0,y*h,0,new T.MeshStandardMaterial({color:0x223e49,roughness:.25,metalness:.5}));}}
+ else if(o.kind==='wall'){box(e,h,n);for(let i=0;i<6;i++)box(e/7,h*(.6+.3*Math.sin(i+1)),n*.18,-e*.42+i*e*.17,-h*.1,n*.52);}
+ else if(o.kind==='tower'||o.kind==='crane'){
+  const leg=e*.12;for(const x of [-1,1])for(const z of [-1,1])box(leg,h,n*.1,x*e*.35,0,z*n*.35);
+  for(let i=0;i<7;i++){box(e,h*.025,n,0,-h*.45+i*h*.14,0,accent);}
+  if(o.kind==='tower'){const dish=new T.Mesh(new T.SphereGeometry(1,12,8),accent);dish.scale.set(e*.32,h*.09,n*.1);dish.position.set(0,h*.28,n*.45);group.add(dish);}else{box(e,h*.05,n,0,h*.42,0,accent);box(e*.08,h*.45,n*.03,e*.4,h*.12,-n*.42,accent);}
+ }
+ else if(o.kind==='windmill'){
+  const pole=new T.Mesh(new T.CylinderGeometry(e*.045,e*.075,h*.7,10),mat);pole.position.y=-h*.15;group.add(pole);
+  const rotor=new T.Group();rotor.position.set(0,h*.19,-n*.1);const radius=Math.min(e*.48,h*.30);for(let i=0;i<3;i++){const blade=new T.Mesh(new T.BoxGeometry(radius*.13,radius,n*.07),accent);blade.position.y=radius*.47;const arm=new T.Group();arm.rotation.z=i*Math.PI*2/3;arm.add(blade);rotor.add(arm);}group.add(rotor);
+ }
+ else if(o.kind==='trees'){for(let i=0;i<12;i++){const x=((i*7)%5)/4-.5,z=((i*3)%7)/6-.5,treeH=h*(.65+.35*((i*11)%7)/6),g=new T.ConeGeometry(1,treeH,7);g.scale(e*.13,1,n*.15);const tree=new T.Mesh(g,new T.MeshStandardMaterial({color:i%2?0x345b42:0x52724c,roughness:1}));tree.position.set(x*e*.72,-h/2+treeH/2,z*n*.70);group.add(tree);}}
+ else if(o.kind==='balloon'){const g=new T.SphereGeometry(1,18,12);g.scale(e*.5,h*.38,n*.5);const balloon=new T.Mesh(g,accent);balloon.position.y=h*.12;group.add(balloon);box(e*.2,h*.12,n*.2,0,-h*.44,0);for(const x of [-1,1])box(e*.012,h*.25,n*.02,x*e*.09,-h*.29,0);}
+
+ else{const g=new T.SphereGeometry(1,24,14);g.scale(e/2,h*.41,n/2);const hull=new T.Mesh(g,mat);hull.position.y=h*.09;group.add(hull);box(e*.28,h*.12,n*.25,0,-h*.42,0,accent);box(e*.82,h*.03,n*.22,0,0,n*.30,accent);}
+ group.updateMatrixWorld(true);const bounds=new T.Box3().setFromObject(group),center=bounds.getCenter(new T.Vector3()),extent=bounds.getSize(new T.Vector3()),meshes=[];group.traverse(m=>{if(m.isMesh)meshes.push(m);});for(const m of meshes){m.geometry.applyMatrix4(m.matrixWorld);m.geometry.translate(-center.x,-center.y,-center.z);m.geometry.scale(e/extent.x,h/extent.y,n/extent.z);}group.clear();for(const m of meshes){m.position.set(0,0,0);m.rotation.set(0,0,0);m.scale.set(1,1,1);group.add(m);}
+ group.userData.obstacle=o.id;group.position.copy(world(o.position));group.traverse(m=>{m.userData.obstacle=o.id;});return group;}
+export function objForObstacle(o){const group=obstacleMesh(o);group.position.set(0,0,0);group.updateMatrixWorld(true);let out='# AEROLAB. metres; Y up; -Z forward. Ground objects use a base origin.\no AEROLAB_Obstacle\n',offset=1;group.traverse(mesh=>{if(!mesh.isMesh)return;const g=mesh.geometry,positions=g.attributes.position;for(let i=0;i<positions.count;i++){const v=new T.Vector3().fromBufferAttribute(positions,i).applyMatrix4(mesh.matrixWorld);if(!isAirObstacle(o))v.y+=o.size[2]/2;out+=`v ${v.x.toFixed(6)} ${v.y.toFixed(6)} ${v.z.toFixed(6)}\n`;}const idx=g.index;for(let i=0;i<(idx?idx.count:positions.count);i+=3)out+='f '+[0,1,2].map(j=>offset+(idx?idx.getX(i+j):i+j)).join(' ')+'\n';offset+=positions.count;});dispose(group);return out;}
+export function dispose(group){group.traverse(o=>{o.geometry?.dispose();if(o.material){for(const m of Array.isArray(o.material)?o.material:[o.material]){m.map?.dispose();m.dispose();}}});group.removeFromParent();}
+export function tag(text){const c=document.createElement('canvas');c.width=768;c.height=96;const x=c.getContext('2d');x.fillStyle='#13272bdf';x.fillRect(0,0,768,96);x.strokeStyle='#ec9976';x.lineWidth=4;x.strokeRect(2,2,764,92);x.font='30px sans-serif';x.fillStyle='#f4ead9';x.textAlign='center';x.fillText(text.slice(0,30),384,60);const s=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(c),depthTest:false,transparent:true}));s.scale.set(650,81,1);return s;}
+export function terrain(points){const group=new T.Group(),b=new T.Box3().setFromPoints(points.map(world)),c=b.getCenter(new T.Vector3()),span=Math.max(b.getSize(new T.Vector3()).length()*2.5,24000),base=b.min.y-1800,g=new T.PlaneGeometry(span,span,100,100);g.rotateX(-Math.PI/2);const a=g.attributes.position,colors=[];for(let i=0;i<a.count;i++){const x=a.getX(i)+c.x,z=a.getZ(i)+c.z,edge=Math.max(Math.abs(x-c.x),Math.abs(z-c.z)),ridge=Math.max(0,edge/span-.12)*13500*(.7+.3*Math.sin(x/2100)*Math.cos(z/1700)),noise=Math.sin(x/900)*Math.cos(z/1300)*130+Math.sin(x/2400+1)*170;const h=base-140+Math.max(0,ridge+noise);a.setXYZ(i,x,h,z);const col=new T.Color('#53665b').lerp(new T.Color('#a2a18b'),Math.min(1,(h-base+150)/1600));colors.push(col.r,col.g,col.b);}g.computeVertexNormals();g.setAttribute('color',new T.Float32BufferAttribute(colors,3));group.add(new T.Mesh(g,new T.MeshStandardMaterial({vertexColors:true,roughness:1,flatShading:true})));
+ const grid=new T.GridHelper(span,Math.ceil(span/1000),0x9bac91,0x9bac91);grid.position.set(c.x,base+5,c.z);grid.material.transparent=true;grid.material.opacity=.1;group.add(grid);return group;}
